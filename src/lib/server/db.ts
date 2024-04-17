@@ -8,8 +8,8 @@ export const select = async (table: string, lastMondayFromOffset: string, nextSu
     
     return new Promise<AchievedGoal[]>(async (resolve, reject) => {
         try {
-            const rows = [{id: '1', done_date: new Date('2021-09-01')}, {id: '2', done_date: new Date('2021-09-02')}, {id: '3', done_date: new Date('2021-09-03')}];
-            // const { rows } = await sql`SELECT * FROM ${table} WHERE done_date BETWEEN ${lastMondayFromOffset} AND ${nextSundayFromOffset};`;
+            // const rows = [{id: '1', done_date: new Date('2021-09-01')}, {id: '2', done_date: new Date('2021-09-02')}, {id: '3', done_date: new Date('2021-09-03')}];
+            const { rows } = await sql`SELECT * FROM gym WHERE done_date BETWEEN ${lastMondayFromOffset} AND ${nextSundayFromOffset};`;
 
             resolve(rows.map((row) => {
                 return {
