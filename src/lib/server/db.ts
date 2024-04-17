@@ -3,24 +3,24 @@ import { uuid } from 'uuidv4';
 
 import type { AchievedGoal } from '$lib/scheme';
 
-export const createTable = async () => {
-    await sql`CREATE TABLE \`gym\` (
-        \`id\` TEXT NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
-        \`done_date\` TIMESTAMP NOT NULL DEFAULT current_timestamp()
-    )`
-    await sql`CREATE TABLE \`run\` (
-        \`id\` TEXT NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
-        \`done_date\` TIMESTAMP NOT NULL DEFAULT current_timestamp()
-    )`
-    await sql`CREATE TABLE \`core\` (
-        \`id\` TEXT NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
-        \`done_date\` TIMESTAMP NOT NULL DEFAULT current_timestamp()
-    )`
-    await sql`CREATE TABLE \`creatine\` (
-        \`id\` TEXT NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
-        \`done_date\` TIMESTAMP NOT NULL DEFAULT current_timestamp()
-    )`
-};
+// export const createTable = async () => {
+//     await sql`CREATE TABLE \`gym\` (
+//         \`id\` TEXT NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
+//         \`done_date\` TIMESTAMP NOT NULL DEFAULT current_timestamp()
+//     )`
+//     await sql`CREATE TABLE \`run\` (
+//         \`id\` TEXT NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
+//         \`done_date\` TIMESTAMP NOT NULL DEFAULT current_timestamp()
+//     )`
+//     await sql`CREATE TABLE \`core\` (
+//         \`id\` TEXT NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
+//         \`done_date\` TIMESTAMP NOT NULL DEFAULT current_timestamp()
+//     )`
+//     await sql`CREATE TABLE \`creatine\` (
+//         \`id\` TEXT NOT NULL DEFAULT uuid() COLLATE 'utf8mb4_general_ci',
+//         \`done_date\` TIMESTAMP NOT NULL DEFAULT current_timestamp()
+//     )`
+// };
 
 export const select = async (table: string, lastMondayFromOffset: string, nextSundayFromOffset: string) => {
     if (table != 'gym' && table != 'run' && table != 'core' && table != 'creatine') { return Promise.reject('Invalid table'); }
