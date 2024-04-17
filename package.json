@@ -30,7 +30,7 @@
   "type": "module",
   "dependencies": {
     "@types/node": "^20.12.7",
-    "mysql2": "^3.9.4",
+    "@vercel/postgres": "^0.8.0",
     "uuidv4": "^6.2.13"
   }
 }
