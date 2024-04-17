@@ -1,5 +1,9 @@
 <script>
-	import "../app.pcss";</script>
+	import "../app.pcss";
+	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
+
+	injectSpeedInsights();
+</script>
 
 <div class="app">
 	<main>

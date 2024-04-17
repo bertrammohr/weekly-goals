@@ -31,6 +31,7 @@
   "dependencies": {
     "@types/node": "^20.12.7",
     "@vercel/postgres": "^0.8.0",
+    "@vercel/speed-insights": "^1.0.10",
     "uuidv4": "^6.2.13"
   }
 }
