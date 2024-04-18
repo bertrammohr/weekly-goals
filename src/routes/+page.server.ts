@@ -11,18 +11,15 @@ export const load: PageServerLoad = async ({ params, url }) => {
     const lastMondayFromOffset = getLastMondayFromDate(offsetWeekDate).toISOString().split('T')[0];
     const nextSundayFromOffset = getNextSundayFromDate(offsetWeekDate).toISOString().split('T')[0];
 
-    // console.log(weekoffset);
-    // console.log(offsetWeekDate.toISOString().split('T')[0]);
-    // console.log(lastMondayFromOffset);
-    // console.log(nextSundayFromOffset);
-
     const data = {
         weekoffset,
         monday: getLastMondayFromDate(offsetWeekDate),
-        gym: await db.select("gym", lastMondayFromOffset, nextSundayFromOffset),
-        run: await db.select("run", lastMondayFromOffset, nextSundayFromOffset),
-        core: await db.select("core", lastMondayFromOffset, nextSundayFromOffset),
-        creatine: await db.select("creatine", lastMondayFromOffset, nextSundayFromOffset),
+        workouts: [
+            ...(await db.select("gym", lastMondayFromOffset, nextSundayFromOffset)),
+            ...(await db.select("run", lastMondayFromOffset, nextSundayFromOffset)),
+            ...(await db.select("core", lastMondayFromOffset, nextSundayFromOffset)),
+            ...(await db.select("creatine", lastMondayFromOffset, nextSundayFromOffset)),
+        ],
     };
 
     // console.log(data);

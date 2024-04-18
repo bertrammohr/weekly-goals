@@ -7,35 +7,10 @@
 	export let data: PageData;
 
 	function hasCompletedOnDay(type: string, checkDay: number){
-		if (type == "gym") {
-			for (let i = 0; i < data.gym.length; i++) {
-				if (new Date(data.gym[i].date).getDay() == checkDay) {
-					return true;
-				}
-			}
-		}
-		if (type == "run") {
-			for (let i = 0; i < data.run.length; i++) {
-				if (new Date(data.run[i].date).getDay() == checkDay) {
-					return true;
-				}
-			}
-		}
-		if (type == "core") {
-			for (let i = 0; i < data.core.length; i++) {
-				if (new Date(data.core[i].date).getDay() == checkDay) {
-					return true;
-				}
-			}
-		}
-		if (type == "creatine") {
-			for (let i = 0; i < data.creatine.length; i++) {
-				if (new Date(data.creatine[i].date).getDay() == checkDay) {
-					return true;
-				}
-			}
-		}
-		return false;
+		return data.workouts.some(workout => {
+			const workoutDate = new Date(workout.date);
+			return workout.type == type && workoutDate.getDay() == checkDay;
+		})
 	}
 
 	function getDay(day: number){
@@ -140,13 +115,23 @@
 		})
 	}
 
-	const update = (type: string, day: number) => {
+	const update = (type: string, day: number, index: number) => {
+		console.log("updating", type, day);
+		sortedWorkoutData[day][index] = !sortedWorkoutData[day][index];
 		if (hasCompletedOnDay(type, day)) {
 			remove(type, day);
 		} else {
 			submit(type, day);
 		}
 	}
+
+	$: sortedWorkoutData = Array.from(Array(7), () => []).map((dayArray, day) => {
+		const result: Boolean[] = [];
+		['run', 'gym', 'core', 'creatine'].forEach(type => {
+			result.push(hasCompletedOnDay(type, day));
+		})
+		return result;
+	});
 </script>
 
 <svelte:head>
@@ -162,16 +147,6 @@
 
 <h1 class="text-2xl my-4 font-bold text-center text-white">Din træningsplan</h1>
 
-<!-- <Card class="mx-auto my-8">
-	<h1 class="text-xl font-bold text-center">Done?</h1>
-	<Label>
-		Mål
-		<Select class="mt-2" items={weeklyGoalTypes} bind:value={selected} />
-	</Label>
-	<input class="my-2" type="date" bind:value={submitDate}>
-	<Button class="my-2 w-1/2 mx-auto" on:click={submit}>Tilføj</Button>
-</Card> -->
-
 <div class="gap-4 my-4 flex flex-row w-1/5 mx-auto justify-center">
 	<Button on:click={() => redirectWeek(false)}>&larr; Ugen forinden</Button>
 	<p class="text-white text-center">{data.weekoffset}</p>
@@ -186,27 +161,31 @@
 		<TableHeadCell class="text-center">Abs 3x</TableHeadCell>
 		<TableHeadCell class="text-center">Creatine 7x</TableHeadCell>
 	</TableHead>
+
 	<TableBody>
 		{#each [1,2,3,4,5,6,0] as day}
 			<TableBodyRow>
 				<TableBodyCell class="text-center">{getDay(day)} (d. {getDateString(day)})</TableBodyCell>
-				{#each ['run', 'gym', 'core', 'creatine'] as type}
-					<TableBodyCell on:click={() => update(type, day)}>
-						{#if hasCompletedOnDay(type, day)}
+
+				{#each sortedWorkoutData[day] as workout, i}
+					<TableBodyCell on:click={() => update(['run', 'gym', 'core', 'creatine'][i], day, i)}>
+						{#if workout}
 							<CheckCircleOutline id="icon-yes" class="mx-auto" size="lg" color="green"/>
-							{:else}
+						{:else}
 							<CloseCircleOutline id="icon-no" class="mx-auto" size="lg" color="red"/>
 						{/if}
 					</TableBodyCell>
 				{/each}
+
 			</TableBodyRow>
 		{/each}
+
 		<TableBodyRow>
 			<TableBodyCell class="text-center">Total</TableBodyCell>
-			<TableBodyCell class="text-center">{data.run.length}</TableBodyCell>
-			<TableBodyCell class="text-center">{data.gym.length}</TableBodyCell>
-			<TableBodyCell class="text-center">{data.core.length}</TableBodyCell>
-			<TableBodyCell class="text-center">{data.creatine.length}</TableBodyCell>
+			<TableBodyCell class="text-center">{data.workouts.filter(workout => workout.type == "run").length}</TableBodyCell>
+			<TableBodyCell class="text-center">{data.workouts.filter(workout => workout.type == "gym").length}</TableBodyCell>
+			<TableBodyCell class="text-center">{data.workouts.filter(workout => workout.type == "core").length}</TableBodyCell>
+			<TableBodyCell class="text-center">{data.workouts.filter(workout => workout.type == "creatine").length}</TableBodyCell>
 		</TableBodyRow>
 	</TableBody>
 </Table>

@@ -31,6 +31,7 @@ export const select = async (table: string, lastMondayFromOffset: string, nextSu
                 return {
                     id: row.id,
                     date: row.done_date,
+                    type: table,
                 };
             }));
         } catch (err) {
