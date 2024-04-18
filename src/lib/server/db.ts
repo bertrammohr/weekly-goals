@@ -4,7 +4,7 @@ import { uuid } from 'uuidv4';
 import type { AchievedGoal } from '$lib/scheme';
 
 export const select = async (table: string, lastMondayFromOffset: string, nextSundayFromOffset: string) => {
-    console.log("select", table, lastMondayFromOffset, nextSundayFromOffset);
+    // console.log("select", table, lastMondayFromOffset, nextSundayFromOffset);
     if (table != 'gym' && table != 'run' && table != 'core' && table != 'creatine') { return Promise.reject('Invalid table'); }
     
     return new Promise<AchievedGoal[]>(async (resolve, reject) => {
@@ -41,7 +41,7 @@ export const select = async (table: string, lastMondayFromOffset: string, nextSu
 }
 
 export const addGoal = async (goal: string, submitDate: string) => {
-    console.log("addGoal", goal, submitDate);
+    // console.log("addGoal", goal, submitDate);
     return new Promise<string>(async (resolve, reject) => {
         const id = uuid();
         if (goal != 'gym' && goal != 'run' && goal != 'core' && goal != 'creatine') { return Promise.reject('Invalid goal'); }
@@ -69,7 +69,7 @@ export const addGoal = async (goal: string, submitDate: string) => {
 }
 
 export const removeGoal = async (goal: string, submitDate: string) => {
-    console.log("removeGoal", goal, submitDate);
+    // console.log("removeGoal", goal, submitDate);
     return new Promise<string>(async (resolve, reject) => {
         if (goal != 'gym' && goal != 'run' && goal != 'core' && goal != 'creatine') { return Promise.reject('Invalid goal'); }
 
