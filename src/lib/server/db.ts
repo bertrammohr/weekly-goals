@@ -29,7 +29,22 @@ export const select = async (table: string, lastMondayFromOffset: string, nextSu
     return new Promise<AchievedGoal[]>(async (resolve, reject) => {
         try {
             // const rows = [{id: '1', done_date: new Date('2021-09-01')}, {id: '2', done_date: new Date('2021-09-02')}, {id: '3', done_date: new Date('2021-09-03')}];
-            const { rows } = await sql`SELECT * FROM gym WHERE done_date BETWEEN ${lastMondayFromOffset} AND ${nextSundayFromOffset};`;
+            let result;
+            switch (table) {
+                case 'gym':
+                    result = await sql`SELECT * FROM gym WHERE done_date BETWEEN ${lastMondayFromOffset} AND ${nextSundayFromOffset};`;
+                    break;
+                case 'run':
+                    result = await sql`SELECT * FROM run WHERE done_date BETWEEN ${lastMondayFromOffset} AND ${nextSundayFromOffset};`;
+                    break;
+                case 'core':
+                    result = await sql`SELECT * FROM core WHERE done_date BETWEEN ${lastMondayFromOffset} AND ${nextSundayFromOffset};`;
+                    break;
+                case 'creatine':
+                    result = await sql`SELECT * FROM creatine WHERE done_date BETWEEN ${lastMondayFromOffset} AND ${nextSundayFromOffset};`;
+                    break;
+            }
+            const { rows } = result;
 
             resolve(rows.map((row) => {
                 return {
@@ -51,7 +66,20 @@ export const addGoal = async (goal: string, submitDate: string) => {
         if (goal != 'gym' && goal != 'run' && goal != 'core' && goal != 'creatine') { return Promise.reject('Invalid goal'); }
 
         try {
-            await sql`INSERT INTO ${goal} (id, done_date) VALUES (${id}, ${submitDate});`
+            switch(goal) {
+                case 'gym':
+                    await sql`INSERT INTO gym (id, done_date) VALUES (${id}, ${submitDate});`
+                    break;
+                case 'run':
+                    await sql`INSERT INTO run (id, done_date) VALUES (${id}, ${submitDate});`
+                    break;
+                case 'core':
+                    await sql`INSERT INTO core (id, done_date) VALUES (${id}, ${submitDate});`
+                    break;
+                case 'creatine':
+                    await sql`INSERT INTO creatine (id, done_date) VALUES (${id}, ${submitDate});`
+                    break;
+            }
             resolve(id);
         } catch (err) {
             reject(err);
@@ -65,7 +93,20 @@ export const removeGoal = async (goal: string, submitDate: string) => {
         if (goal != 'gym' && goal != 'run' && goal != 'core' && goal != 'creatine') { return Promise.reject('Invalid goal'); }
 
         try {
-            await sql`DELETE FROM ${goal} WHERE done_date = ${submitDate};`
+            switch(goal) {
+                case 'gym':
+                    await sql`DELETE FROM gym WHERE done_date = ${submitDate};`
+                    break;
+                case 'run':
+                    await sql`DELETE FROM run WHERE done_date = ${submitDate};`
+                    break;
+                case 'core':
+                    await sql`DELETE FROM core WHERE done_date = ${submitDate};`
+                    break;
+                case 'creatine':
+                    await sql`DELETE FROM creatine WHERE done_date = ${submitDate};`
+                    break;
+            }
             resolve(submitDate);
         } catch (err) {
             reject(err);
