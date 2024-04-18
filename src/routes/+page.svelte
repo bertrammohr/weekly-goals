@@ -115,10 +115,10 @@
 		})
 	}
 
-	const update = (type: string, day: number, index: number) => {
+	const update = (type: string, day: number, index: number, status: boolean) => {
 		console.log("updating", type, day);
 		sortedWorkoutData[day][index] = !sortedWorkoutData[day][index];
-		if (hasCompletedOnDay(type, day)) {
+		if (status) {
 			remove(type, day);
 		} else {
 			submit(type, day);
@@ -126,7 +126,7 @@
 	}
 
 	$: sortedWorkoutData = Array.from(Array(7), () => []).map((dayArray, day) => {
-		const result: Boolean[] = [];
+		const result: boolean[] = [];
 		['run', 'gym', 'core', 'creatine'].forEach(type => {
 			result.push(hasCompletedOnDay(type, day));
 		})
@@ -168,7 +168,7 @@
 				<TableBodyCell class="text-center">{getDay(day)} (d. {getDateString(day)})</TableBodyCell>
 
 				{#each sortedWorkoutData[day] as workout, i}
-					<TableBodyCell on:click={() => update(['run', 'gym', 'core', 'creatine'][i], day, i)}>
+					<TableBodyCell on:click={() => update(['run', 'gym', 'core', 'creatine'][i], day, i, workout)}>
 						{#if workout}
 							<CheckCircleOutline id="icon-yes" class="mx-auto" size="lg" color="green"/>
 						{:else}
