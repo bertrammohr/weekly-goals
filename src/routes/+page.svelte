@@ -35,6 +35,7 @@
 				}
 			}
 		}
+		return false;
 	}
 
 	function getDay(day: number){
@@ -56,39 +57,6 @@
 		}
 	}
 
-	let selected: string;
-	let weeklyGoalTypes = [
-		{ value: 'gym', name: 'Gym' },
-		{ value: 'run', name: 'Løb' },
-		{ value: 'core', name: 'Abs' },
-		{ value: 'creatine', name: 'Creatine' }
-	];
-	let submitDate = new Date().toISOString().split('T')[0]; 
-
-	const submit = () => {
-		fetch('/api/addWeeklyGoal', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ type: selected, submitDate })
-		}).then(res=>res.json()).then(res=> {
-			if (res.message == "success") {
-				alert.active = true;
-				alert.type = "success";
-				alert.message = "Mål tilføjet";
-			} else {
-				alert.active = true;
-				alert.type = "error";
-				alert.message = "Der skete en fejl";
-			}
-
-			setTimeout(() => {
-				alert.active = false;
-			}, 3000);
-		})
-	}
-
 	const redirectWeek = (forward: boolean) => {
 		const urlParams = new URLSearchParams(window.location.search);
 		let weekOffset = urlParams.has('week') ? Number(urlParams.get('week')) : 0;
@@ -103,7 +71,7 @@
 		window.location.href = `/?week=${weekOffset}`;
 	};
 
-	const alert = {
+	const alertData = {
 		active: false,
 		type: 'success',
 		message: 'Mål tilføjet'
@@ -114,6 +82,34 @@
 		newDate.setDate(newDate.getDate() + day - 1 + (day == 0 ? 7 : 0));
 
 		return `${newDate.getDate() < 10 ? '0' + newDate.getDate() : newDate.getDate()}/${newDate.getMonth() + 1 < 10 ? '0' + (newDate.getMonth() + 1) : newDate.getMonth() + 1}`
+	}
+
+	const submit = (type: string, day: number) => {
+
+		const newDate = new Date(data.monday);
+		newDate.setDate(newDate.getDate() + day - 1 + (day == 0 ? 7 : 0));
+
+		fetch('/api/addWeeklyGoal', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ type, submitDate: newDate.toISOString().split('T')[0] })
+		}).then(res=>res.json()).then(res=> {
+			if (res.message == "success") {
+				alertData.active = true;
+				alertData.type = "success";
+				alertData.message = "Mål tilføjet";
+			} else {
+				alertData.active = true;
+				alertData.type = "error";
+				alertData.message = "Der skete en fejl";
+			}
+
+			setTimeout(() => {
+				alertData.active = false;
+			}, 3000);
+		})
 	}
 
 	const remove = (type: string, day: number) => {
@@ -129,19 +125,27 @@
 			body: JSON.stringify({ type, date: newDate.toISOString().split('T')[0] })
 		}).then(res=>res.json()).then(res=> {
 			if (res.message == "success") {
-				alert.active = true;
-				alert.type = "success";
-				alert.message = "Mål fjernet";
+				alertData.active = true;
+				alertData.type = "success";
+				alertData.message = "Mål fjernet";
 			} else {
-				alert.active = true;
-				alert.type = "error";
-				alert.message = "Der skete en fejl";
+				alertData.active = true;
+				alertData.type = "error";
+				alertData.message = "Der skete en fejl";
 			}
 
 			setTimeout(() => {
-				alert.active = false;
+				alertData.active = false;
 			}, 3000);
 		})
+	}
+
+	const update = (type: string, day: number) => {
+		if (hasCompletedOnDay(type, day)) {
+			remove(type, day);
+		} else {
+			submit(type, day);
+		}
 	}
 </script>
 
@@ -150,15 +154,15 @@
 	<meta name="description" content="Weekly goals" />
 </svelte:head>
 
-{#if alert.active}
-	<Alert class="absolute w-full mx-auto text-right my-8" color={alert.type == "success" ? "blue" : "red"}>
-		<p class="mr-16">{alert.message}</p>
+{#if alertData.active}
+	<Alert class="absolute w-full mx-auto text-right my-8" color={alertData.type == "success" ? "blue" : "red"}>
+		<p class="mr-16">{alertData.message}</p>
 	</Alert>
 {/if}
 
 <h1 class="text-2xl my-4 font-bold text-center text-white">Din træningsplan</h1>
 
-<Card class="mx-auto my-8">
+<!-- <Card class="mx-auto my-8">
 	<h1 class="text-xl font-bold text-center">Done?</h1>
 	<Label>
 		Mål
@@ -166,7 +170,7 @@
 	</Label>
 	<input class="my-2" type="date" bind:value={submitDate}>
 	<Button class="my-2 w-1/2 mx-auto" on:click={submit}>Tilføj</Button>
-</Card>
+</Card> -->
 
 <div class="gap-4 my-4 flex flex-row w-1/5 mx-auto justify-center">
 	<Button on:click={() => redirectWeek(false)}>&larr; Ugen forinden</Button>
@@ -187,11 +191,10 @@
 			<TableBodyRow>
 				<TableBodyCell class="text-center">{getDay(day)} (d. {getDateString(day)})</TableBodyCell>
 				{#each ['run', 'gym', 'core', 'creatine'] as type}
-					<TableBodyCell on:click={() => remove(type, day)}>
+					<TableBodyCell on:click={() => update(type, day)}>
 						{#if hasCompletedOnDay(type, day)}
 							<CheckCircleOutline id="icon-yes" class="mx-auto" size="lg" color="green"/>
-							<Tooltip class="w-64 text-sm font-light" triggeredBy="#icon-yes">Click to delete</Tooltip>
-						{:else}
+							{:else}
 							<CloseCircleOutline id="icon-no" class="mx-auto" size="lg" color="red"/>
 						{/if}
 					</TableBodyCell>
@@ -207,3 +210,5 @@
 		</TableBodyRow>
 	</TableBody>
 </Table>
+<Tooltip class="w-64 text-sm font-light" triggeredBy="#icon-yes">Click to remove</Tooltip>
+<Tooltip class="w-64 text-sm font-light" triggeredBy="#icon-no">Click to add</Tooltip>
