@@ -1,6 +1,43 @@
 <script lang="ts">
-	import { Tooltip, Alert, Button, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Card, Select, Label } from 'flowbite-svelte';
+	import { Tooltip, Modal, Alert, Button, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Card, Select, Label, P } from 'flowbite-svelte';
 	import { CheckCircleOutline, CloseCircleOutline } from 'flowbite-svelte-icons';
+
+	import { user } from '$lib/stores/user';
+	let loginModal = false;
+	let loginModalInput = '';
+
+	const attemptLogin = async () => {
+		fetch('/api/validatePassword', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ code: loginModalInput })
+		}).then(res=>res.json()).then(res=> {
+
+			if (res.message == "success") {
+				alertData.active = true;
+				alertData.type = "success";
+				alertData.message = "Logget ind";
+				
+				user.set({key: loginModalInput});
+			} else if (res.message == "wrong password") {
+				alertData.active = true;
+				alertData.type = "error";
+				alertData.message = "Forkert kode";
+			} else {
+				alertData.active = true;
+				alertData.type = "error";
+				alertData.message = "Der skete en fejl";
+			}
+
+			loginModalInput = '';
+
+			setTimeout(() => {
+				alertData.active = false;
+			}, 3000);
+		})
+	};
 
 	import type { PageData } from './$types';
 
@@ -67,7 +104,8 @@
 		fetch('/api/addWeeklyGoal', {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${$user?.key}`
 			},
 			body: JSON.stringify({ type, submitDate: newDate.toISOString().split('T')[0] })
 		}).then(res=>res.json()).then(res=> {
@@ -95,7 +133,8 @@
 		fetch('/api/removeWeeklyGoal', {
 			method: 'DELETE',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${$user?.key}`
 			},
 			body: JSON.stringify({ type, date: newDate.toISOString().split('T')[0] })
 		}).then(res=>res.json()).then(res=> {
@@ -117,6 +156,17 @@
 
 	const update = (type: string, day: number, index: number, status: boolean) => {
 		console.log("updating", type, day);
+
+		if (!$user) {
+			alertData.active = true;
+			alertData.type = "error";
+			alertData.message = "Du skal være logget ind for at tilføje mål";
+			setTimeout(() => {
+				alertData.active = false;
+			}, 3000);
+			return;
+		}
+
 		sortedWorkoutData[day][index] = !sortedWorkoutData[day][index];
 		if (status) {
 			remove(type, day);
@@ -140,9 +190,20 @@
 </svelte:head>
 
 {#if alertData.active}
-	<Alert class="absolute w-full mx-auto text-right my-8" color={alertData.type == "success" ? "blue" : "red"}>
+	<Alert class="fixed right-8 w-1/5 background-white mx-auto text-right my-8" color={alertData.type == "success" ? "blue" : "red"}>
 		<p class="mr-16">{alertData.message}</p>
 	</Alert>
+{/if}
+
+{#if !$user}
+	<Button class="fixed right-8" on:click={() => (loginModal = true)}>Login</Button>
+	<Modal title="Login" bind:open={loginModal} autoclose>
+		<input type="password" placeholder="Password..." bind:value={loginModalInput}>
+		<svelte:fragment slot="footer">
+			<Button on:click={attemptLogin}>Login</Button>
+			<Button color="alternative">Cancel</Button>
+		</svelte:fragment>
+	</Modal>
 {/if}
 
 <h1 class="text-2xl my-4 font-bold text-center text-white">Din træningsplan</h1>

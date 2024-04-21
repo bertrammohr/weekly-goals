@@ -5,5 +5,5 @@ export interface AchievedGoal {
 }
 
 export interface User {
-    key: string;
+    key: string,
 }
