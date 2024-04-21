@@ -155,7 +155,7 @@
 	}
 
 	const update = (type: string, day: number, index: number, status: boolean) => {
-		console.log("updating", type, day);
+		// console.log("updating", type, day);
 
 		if (!$user) {
 			alertData.active = true;
