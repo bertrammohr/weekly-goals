@@ -6,12 +6,14 @@ export const getDateWithWeekOffset = (weekOffset: number) => {
 
 export const getLastMondayFromDate = (a: Date) => {
     const d = new Date(a);
-    d.setDate(d.getDate() - d.getDay() + 1);
+    const x = d.getDay() === 0 ? 6 : d.getDay() - 1;
+    d.setDate(d.getDate() - x);
     return d;
 }
 
 export const getNextSundayFromDate = (a: Date) => {
     const d = new Date(a);
-    d.setDate(d.getDate() + (7 - d.getDay()));
+    const x = d.getDay() === 0 ? 6 : d.getDay() - 1;
+    d.setDate(d.getDate() - x + 6);
     return d;
 }
