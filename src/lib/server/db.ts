@@ -41,6 +41,11 @@ export const select = async (table: string, lastMondayFromOffset: string, nextSu
     });
 }
 
+export const selectAll = async () => {
+    const { rows } = await sql`SELECT * FROM achieved_goals;`;
+    return rows;
+};
+
 export const addGoal = async (goal: string, submitDate: string) => {
     // console.log("addGoal", goal, submitDate);
     return new Promise<string>(async (resolve, reject) => {
