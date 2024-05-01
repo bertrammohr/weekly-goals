@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { verifyPassword } from '$lib/util';
+import { verifyPassword } from '$lib/server/password';
 
 export async function POST(event) {
     try {

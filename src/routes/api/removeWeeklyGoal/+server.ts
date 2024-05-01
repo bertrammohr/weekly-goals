@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import * as db from '$lib/server/db';
-import { verifyPassword } from '$lib/util';
+import { verifyPassword } from '$lib/server/password';
 
 export async function DELETE(event) {
     try {
