@@ -51,22 +51,10 @@ export const addGoal = async (goal: string, submitDate: string) => {
     return new Promise<string>(async (resolve, reject) => {
         const id = uuid();
         if (goal != 'gym' && goal != 'run' && goal != 'core' && goal != 'creatine') { return Promise.reject('Invalid goal'); }
-
+        
         try {
-            switch(goal) {
-                case 'gym':
-                    await sql`INSERT INTO gym (id, done_date) VALUES (${id}, ${submitDate});`
-                    break;
-                case 'run':
-                    await sql`INSERT INTO run (id, done_date) VALUES (${id}, ${submitDate});`
-                    break;
-                case 'core':
-                    await sql`INSERT INTO core (id, done_date) VALUES (${id}, ${submitDate});`
-                    break;
-                case 'creatine':
-                    await sql`INSERT INTO creatine (id, done_date) VALUES (${id}, ${submitDate});`
-                    break;
-            }
+            sql`INSERT INTO achieved_goals (id, done_date, goal_type) VALUES (${id}, ${submitDate}, ${goal});`;
+            
             resolve(id);
         } catch (err) {
             reject(err);
@@ -98,5 +86,15 @@ export const removeGoal = async (goal: string, submitDate: string) => {
         } catch (err) {
             reject(err);
         }
+    });
+}
+export const fixDatabase = async () => {
+    const { rows: gymrows } = await sql`SELECT * FROM gym;`;
+    const { rows: runrows } = await sql`SELECT * FROM run;`;
+    const { rows: corerows } = await sql`SELECT * FROM core;`;
+    const { rows: creatinerows } = await sql`SELECT * FROM creatine;`;
+
+    [...gymrows, ...runrows, ...corerows, ...creatinerows].forEach((row) => {
+        sql`INSERT INTO achieved_goals (id, done_date, goal_type) VALUES (${row.id}, ${row.done_date}, ${row.goal_type});`
     });
 }

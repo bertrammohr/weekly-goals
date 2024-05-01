@@ -9,11 +9,9 @@ export const load: PageServerLoad = async ({ params, url }) => {
     const offsetWeekDate = getDateWithWeekOffset(weekoffset);
 
     const lastMondayFromOffset = getLastMondayFromDate(offsetWeekDate);
-    const lastMondayFromOffsetText = lastMondayFromOffset.toISOString().split('T')[0];
-    const nextSundayFromOffset = getNextSundayFromDate(offsetWeekDate)
-    const nextSundayFromOffsetText = nextSundayFromOffset.toISOString().split('T')[0];
+    const nextSundayFromOffset = getNextSundayFromDate(offsetWeekDate);
 
-    const mondayTime = Math.floor((lastMondayFromOffset.getTime() / 86400000))*86400000;
+    const mondayTime = (Math.floor((lastMondayFromOffset.getTime() / 86400000))*86400000)-(2*60*60*1000); 
     const sundayTime = Math.floor((nextSundayFromOffset.getTime() / 86400000))*86400000;
 
     const allWorkouts = (await db.selectAll()).map((workout) => {
@@ -21,25 +19,17 @@ export const load: PageServerLoad = async ({ params, url }) => {
             timestamp: new Date(workout.done_date).getTime(),
             id: workout.id,
             type: workout.goal_type,
+            date: workout.done_date,
         }
-    })
+    }).sort((a, b) => a.timestamp - b.timestamp);
 
-    const sortedWorkouts = allWorkouts.filter(w => mondayTime <= w.timestamp && w.timestamp <= sundayTime).sort((a, b) => a.timestamp - b.timestamp);
-
-    console.log(mondayTime, sundayTime);
-
-    console.table(allWorkouts);
-    console.table(sortedWorkouts);
-
+    const workoutsForGivenWeek = allWorkouts.filter(w => mondayTime <= w.timestamp && w.timestamp <= sundayTime)
+    
     const data = {
         weekoffset,
+        allWorkouts,
         monday: lastMondayFromOffset,
-        workouts: [
-            ...(await db.select("gym", lastMondayFromOffsetText, nextSundayFromOffsetText)),
-            ...(await db.select("run", lastMondayFromOffsetText, nextSundayFromOffsetText)),
-            ...(await db.select("core", lastMondayFromOffsetText, nextSundayFromOffsetText)),
-            ...(await db.select("creatine", lastMondayFromOffsetText, nextSundayFromOffsetText)),
-        ],
+        workouts: workoutsForGivenWeek,
     };
 
     // console.log(data);
