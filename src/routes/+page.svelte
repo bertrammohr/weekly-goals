@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { Tooltip, Modal, Alert, Button, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Card, Select, Label, P } from 'flowbite-svelte';
+	import { Tooltip, Modal, Alert, Button, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell } from 'flowbite-svelte';
 	import { CheckCircleOutline, CloseCircleOutline } from 'flowbite-svelte-icons';
-
+	import { getDayStringFromNumber, getDateStringFromWeekday } from '$lib/util';
 	import { user } from '$lib/stores/user';
+	import type { PageData } from './$types';
+
 	let loginModal = false;
 	let loginModalInput = '';
 
@@ -38,37 +40,6 @@
 			}, 3000);
 		})
 	};
-
-	import type { PageData } from './$types';
-
-	export let data: PageData;
-
-	function hasCompletedOnDay(type: string, checkDay: number){
-		return data.workouts.some(workout => {
-			const workoutDate = new Date(workout.date);
-			return workout.type == type && workoutDate.getDay() == checkDay;
-		})
-	}
-
-	function getDay(day: number){
-		switch (day) {
-			case 0:
-				return "Søndag";
-			case 1:
-				return "Mandag";
-			case 2:
-				return "Tirsdag";
-			case 3:
-				return "Onsdag";
-			case 4:
-				return "Torsdag";
-			case 5:
-				return "Fredag";
-			case 6:
-				return "Lørdag";
-		}
-	}
-
 	const redirectWeek = (forward: boolean) => {
 		const urlParams = new URLSearchParams(window.location.search);
 		let weekOffset = urlParams.has('week') ? Number(urlParams.get('week')) : 0;
@@ -82,18 +53,17 @@
 		
 		window.location.href = `/?week=${weekOffset}`;
 	};
-
 	const alertData = {
 		active: false,
 		type: 'success',
 		message: 'Mål tilføjet'
 	}
 
-	const getDateString = (day: number) => {
-		const newDate = new Date(data.monday);
-		newDate.setDate(newDate.getDate() + day - 1 + (day == 0 ? 7 : 0));
-
-		return `${newDate.getDate() < 10 ? '0' + newDate.getDate() : newDate.getDate()}/${newDate.getMonth() + 1 < 10 ? '0' + (newDate.getMonth() + 1) : newDate.getMonth() + 1}`
+	function getGoalIdIfHasCompletedOnDay (type: string, checkDay: number): string | null {
+		return (data.workouts.find(workout => {
+			const workoutDate = new Date(workout.date);
+			return workout.type == type && workoutDate.getDay() == checkDay;
+		}))?.id;
 	}
 
 	const submit = (type: string, day: number) => {
@@ -101,42 +71,42 @@
 		const newDate = new Date(data.monday);
 		newDate.setDate(newDate.getDate() + day - 1 + (day == 0 ? 7 : 0));
 
-		fetch('/api/addWeeklyGoal', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${$user?.key}`
-			},
-			body: JSON.stringify({ type, submitDate: newDate.toISOString().split('T')[0] })
-		}).then(res=>res.json()).then(res=> {
-			if (res.message == "success") {
-				alertData.active = true;
-				alertData.type = "success";
-				alertData.message = "Mål tilføjet";
-			} else {
-				alertData.active = true;
-				alertData.type = "error";
-				alertData.message = "Der skete en fejl";
-			}
+		return new Promise<string>((resolve, reject) => {
+			fetch('/api/addWeeklyGoal', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${$user?.key}`
+				},
+				body: JSON.stringify({ type, submitDate: newDate.toISOString().split('T')[0] })
+			}).then(res=>res.json()).then(res=> {
+				if (res.message == "success") {
+					resolve(res.id);
+					alertData.active = true;
+					alertData.type = "success";
+					alertData.message = "Mål tilføjet";
+				} else {
+					reject();
+					alertData.active = true;
+					alertData.type = "error";
+					alertData.message = "Der skete en fejl";
+				}
 
-			setTimeout(() => {
-				alertData.active = false;
-			}, 3000);
+				setTimeout(() => {
+					alertData.active = false;
+				}, 3000);
+			})
 		})
 	}
 
-	const remove = (type: string, day: number) => {
-
-		const newDate = new Date(data.monday);
-		newDate.setDate(newDate.getDate() + day - 1 + (day == 0 ? 7 : 0));
-
+	const remove = (id: string) => {
 		fetch('/api/removeWeeklyGoal', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${$user?.key}`
 			},
-			body: JSON.stringify({ type, date: newDate.toISOString().split('T')[0] })
+			body: JSON.stringify({ id })
 		}).then(res=>res.json()).then(res=> {
 			if (res.message == "success") {
 				alertData.active = true;
@@ -154,8 +124,8 @@
 		})
 	}
 
-	const update = (type: string, day: number, index: number, status: boolean) => {
-		// console.log("updating", type, day);
+	const update = async (type: string, day: number, index: number) => {
+		console.log("updating", type, day);
 
 		if (!$user) {
 			alertData.active = true;
@@ -167,21 +137,21 @@
 			return;
 		}
 
-		sortedWorkoutData[day][index] = !sortedWorkoutData[day][index];
-		if (status) {
-			remove(type, day);
+		if (sortedWorkoutData[day][index] != null) {
+			remove(sortedWorkoutData[day][index] as string);
+			sortedWorkoutData[day][index] = null;
 		} else {
-			submit(type, day);
+			sortedWorkoutData[day][index] = await submit(type, day);
 		}
 	}
 
-	$: sortedWorkoutData = Array.from(Array(7), () => []).map((dayArray, day) => {
-		const result: boolean[] = [];
-		['run', 'gym', 'core', 'creatine'].forEach(type => {
-			result.push(hasCompletedOnDay(type, day));
-		})
-		return result;
+	$: sortedWorkoutData = Array.from(Array(7), () => []).map((_, day) => {
+		return ['run', 'gym', 'core', 'creatine'].map(type => {
+			return getGoalIdIfHasCompletedOnDay(type, day);
+		});
 	});
+
+	export let data: PageData;
 </script>
 
 <svelte:head>
@@ -217,19 +187,19 @@
 <Table>
 	<TableHead>
 		<TableHeadCell></TableHeadCell>
-		<TableHeadCell class="text-center">Løb 2x</TableHeadCell>
-		<TableHeadCell class="text-center">Gym 5x</TableHeadCell>
-		<TableHeadCell class="text-center">Abs 3x</TableHeadCell>
-		<TableHeadCell class="text-center">Creatine 7x</TableHeadCell>
+		<TableHeadCell class="text-center">Løb<br>{data.workouts.filter(workout => workout.type == "run").length}/2</TableHeadCell>
+		<TableHeadCell class="text-center">Gym<br>{data.workouts.filter(workout => workout.type == "gym").length}/5</TableHeadCell>
+		<TableHeadCell class="text-center">Abs<br>{data.workouts.filter(workout => workout.type == "core").length}/3</TableHeadCell>
+		<TableHeadCell class="text-center">Creatine<br>{data.workouts.filter(workout => workout.type == "creatine").length}/7</TableHeadCell>
 	</TableHead>
 
 	<TableBody>
 		{#each [1,2,3,4,5,6,0] as day}
 			<TableBodyRow>
-				<TableBodyCell class="text-center">{getDay(day)} (d. {getDateString(day)})</TableBodyCell>
+				<TableBodyCell class="text-center">{getDayStringFromNumber(day)} (d. {getDateStringFromWeekday(data.monday, day)})</TableBodyCell>
 
 				{#each sortedWorkoutData[day] as workout, i}
-					<TableBodyCell on:click={() => update(['run', 'gym', 'core', 'creatine'][i], day, i, workout)}>
+					<TableBodyCell on:click={() => update(['run', 'gym', 'core', 'creatine'][i], day, i)}>
 						{#if workout}
 							<CheckCircleOutline id="icon-yes" class="mx-auto" size="lg" color="green"/>
 						{:else}
@@ -242,11 +212,11 @@
 		{/each}
 
 		<TableBodyRow>
-			<TableBodyCell class="text-center">Total</TableBodyCell>
-			<TableBodyCell class="text-center">{data.workouts.filter(workout => workout.type == "run").length}</TableBodyCell>
-			<TableBodyCell class="text-center">{data.workouts.filter(workout => workout.type == "gym").length}</TableBodyCell>
-			<TableBodyCell class="text-center">{data.workouts.filter(workout => workout.type == "core").length}</TableBodyCell>
-			<TableBodyCell class="text-center">{data.workouts.filter(workout => workout.type == "creatine").length}</TableBodyCell>
+			<TableBodyCell class="text-center">Streak</TableBodyCell>
+			<TableBodyCell class="text-center"></TableBodyCell>
+			<TableBodyCell class="text-center"></TableBodyCell>
+			<TableBodyCell class="text-center"></TableBodyCell>
+			<TableBodyCell class="text-center"></TableBodyCell>
 		</TableBodyRow>
 	</TableBody>
 </Table>

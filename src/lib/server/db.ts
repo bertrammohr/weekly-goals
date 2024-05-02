@@ -41,27 +41,20 @@ export const select = async (table: string, lastMondayFromOffset: string, nextSu
     });
 }
 
+export const selectAll = async () => {
+    const { rows } = await sql`SELECT * FROM achieved_goals;`;
+    return rows;
+};
+
 export const addGoal = async (goal: string, submitDate: string) => {
     // console.log("addGoal", goal, submitDate);
     return new Promise<string>(async (resolve, reject) => {
         const id = uuid();
         if (goal != 'gym' && goal != 'run' && goal != 'core' && goal != 'creatine') { return Promise.reject('Invalid goal'); }
-
+        
         try {
-            switch(goal) {
-                case 'gym':
-                    await sql`INSERT INTO gym (id, done_date) VALUES (${id}, ${submitDate});`
-                    break;
-                case 'run':
-                    await sql`INSERT INTO run (id, done_date) VALUES (${id}, ${submitDate});`
-                    break;
-                case 'core':
-                    await sql`INSERT INTO core (id, done_date) VALUES (${id}, ${submitDate});`
-                    break;
-                case 'creatine':
-                    await sql`INSERT INTO creatine (id, done_date) VALUES (${id}, ${submitDate});`
-                    break;
-            }
+            sql`INSERT INTO achieved_goals (id, done_date, goal_type) VALUES (${id}, ${submitDate}, ${goal});`;
+            
             resolve(id);
         } catch (err) {
             reject(err);
@@ -69,29 +62,24 @@ export const addGoal = async (goal: string, submitDate: string) => {
     });
 }
 
-export const removeGoal = async (goal: string, submitDate: string) => {
-    // console.log("removeGoal", goal, submitDate);
+export const removeGoal = async (id: string) => {
+    // console.log("removeGoal", id);
     return new Promise<string>(async (resolve, reject) => {
-        if (goal != 'gym' && goal != 'run' && goal != 'core' && goal != 'creatine') { return Promise.reject('Invalid goal'); }
-
         try {
-            switch(goal) {
-                case 'gym':
-                    await sql`DELETE FROM gym WHERE done_date = ${submitDate};`
-                    break;
-                case 'run':
-                    await sql`DELETE FROM run WHERE done_date = ${submitDate};`
-                    break;
-                case 'core':
-                    await sql`DELETE FROM core WHERE done_date = ${submitDate};`
-                    break;
-                case 'creatine':
-                    await sql`DELETE FROM creatine WHERE done_date = ${submitDate};`
-                    break;
-            }
-            resolve(submitDate);
+            await sql`DELETE FROM achieved_goals WHERE id = ${id};`;
+            resolve(id);
         } catch (err) {
             reject(err);
         }
+    });
+}
+export const fixDatabase = async () => {
+    const { rows: gymrows } = await sql`SELECT * FROM gym;`;
+    const { rows: runrows } = await sql`SELECT * FROM run;`;
+    const { rows: corerows } = await sql`SELECT * FROM core;`;
+    const { rows: creatinerows } = await sql`SELECT * FROM creatine;`;
+
+    [...gymrows, ...runrows, ...corerows, ...creatinerows].forEach((row) => {
+        sql`INSERT INTO achieved_goals (id, done_date, goal_type) VALUES (${row.id}, ${row.done_date}, ${row.goal_type});`
     });
 }
