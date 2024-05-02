@@ -59,11 +59,11 @@
 		message: 'Mål tilføjet'
 	}
 
-	function hasCompletedOnDay(type: string, checkDay: number){
-		return data.workouts.some(workout => {
+	function getGoalIdIfHasCompletedOnDay (type: string, checkDay: number): string | null {
+		return (data.workouts.find(workout => {
 			const workoutDate = new Date(workout.date);
 			return workout.type == type && workoutDate.getDay() == checkDay;
-		})
+		}))?.id;
 	}
 
 	const submit = (type: string, day: number) => {
@@ -71,42 +71,42 @@
 		const newDate = new Date(data.monday);
 		newDate.setDate(newDate.getDate() + day - 1 + (day == 0 ? 7 : 0));
 
-		fetch('/api/addWeeklyGoal', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${$user?.key}`
-			},
-			body: JSON.stringify({ type, submitDate: newDate.toISOString().split('T')[0] })
-		}).then(res=>res.json()).then(res=> {
-			if (res.message == "success") {
-				alertData.active = true;
-				alertData.type = "success";
-				alertData.message = "Mål tilføjet";
-			} else {
-				alertData.active = true;
-				alertData.type = "error";
-				alertData.message = "Der skete en fejl";
-			}
+		return new Promise<string>((resolve, reject) => {
+			fetch('/api/addWeeklyGoal', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${$user?.key}`
+				},
+				body: JSON.stringify({ type, submitDate: newDate.toISOString().split('T')[0] })
+			}).then(res=>res.json()).then(res=> {
+				if (res.message == "success") {
+					resolve(res.id);
+					alertData.active = true;
+					alertData.type = "success";
+					alertData.message = "Mål tilføjet";
+				} else {
+					reject();
+					alertData.active = true;
+					alertData.type = "error";
+					alertData.message = "Der skete en fejl";
+				}
 
-			setTimeout(() => {
-				alertData.active = false;
-			}, 3000);
+				setTimeout(() => {
+					alertData.active = false;
+				}, 3000);
+			})
 		})
 	}
 
-	const remove = (type: string, day: number) => {
-
-		const newDate = new Date(data.monday);
-		newDate.setDate(newDate.getDate() + day - 1 + (day == 0 ? 7 : 0));
-
+	const remove = (id: string) => {
 		fetch('/api/removeWeeklyGoal', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${$user?.key}`
 			},
-			body: JSON.stringify({ type, date: newDate.toISOString().split('T')[0] })
+			body: JSON.stringify({ id })
 		}).then(res=>res.json()).then(res=> {
 			if (res.message == "success") {
 				alertData.active = true;
@@ -124,8 +124,8 @@
 		})
 	}
 
-	const update = (type: string, day: number, index: number, status: boolean) => {
-		// console.log("updating", type, day);
+	const update = async (type: string, day: number, index: number) => {
+		console.log("updating", type, day);
 
 		if (!$user) {
 			alertData.active = true;
@@ -137,17 +137,17 @@
 			return;
 		}
 
-		sortedWorkoutData[day][index] = !sortedWorkoutData[day][index];
-		if (status) {
-			remove(type, day);
+		if (sortedWorkoutData[day][index] != null) {
+			remove(sortedWorkoutData[day][index] as string);
+			sortedWorkoutData[day][index] = null;
 		} else {
-			submit(type, day);
+			sortedWorkoutData[day][index] = await submit(type, day);
 		}
 	}
 
 	$: sortedWorkoutData = Array.from(Array(7), () => []).map((_, day) => {
 		return ['run', 'gym', 'core', 'creatine'].map(type => {
-			return hasCompletedOnDay(type, day);
+			return getGoalIdIfHasCompletedOnDay(type, day);
 		});
 	});
 
@@ -199,7 +199,7 @@
 				<TableBodyCell class="text-center">{getDayStringFromNumber(day)} (d. {getDateStringFromWeekday(data.monday, day)})</TableBodyCell>
 
 				{#each sortedWorkoutData[day] as workout, i}
-					<TableBodyCell on:click={() => update(['run', 'gym', 'core', 'creatine'][i], day, i, workout)}>
+					<TableBodyCell on:click={() => update(['run', 'gym', 'core', 'creatine'][i], day, i)}>
 						{#if workout}
 							<CheckCircleOutline id="icon-yes" class="mx-auto" size="lg" color="green"/>
 						{:else}

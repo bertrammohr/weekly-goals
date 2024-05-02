@@ -11,10 +11,10 @@ export async function DELETE(event) {
         }
 
         const data = await event.request.json();
-        if (!data.type || !data.date) {
+        if (!data.id) {
             return json({message: "error"});
         }
-        const id = await db.removeGoal(data.type, data.date);
+        const id = await db.removeGoal(data.id);
         return json({message: "success", id});
     } catch(err) {
         console.error(err);

@@ -62,27 +62,12 @@ export const addGoal = async (goal: string, submitDate: string) => {
     });
 }
 
-export const removeGoal = async (goal: string, submitDate: string) => {
-    // console.log("removeGoal", goal, submitDate);
+export const removeGoal = async (id: string) => {
+    // console.log("removeGoal", id);
     return new Promise<string>(async (resolve, reject) => {
-        if (goal != 'gym' && goal != 'run' && goal != 'core' && goal != 'creatine') { return Promise.reject('Invalid goal'); }
-
         try {
-            switch(goal) {
-                case 'gym':
-                    await sql`DELETE FROM gym WHERE done_date = ${submitDate};`
-                    break;
-                case 'run':
-                    await sql`DELETE FROM run WHERE done_date = ${submitDate};`
-                    break;
-                case 'core':
-                    await sql`DELETE FROM core WHERE done_date = ${submitDate};`
-                    break;
-                case 'creatine':
-                    await sql`DELETE FROM creatine WHERE done_date = ${submitDate};`
-                    break;
-            }
-            resolve(submitDate);
+            await sql`DELETE FROM achieved_goals WHERE id = ${id};`;
+            resolve(id);
         } catch (err) {
             reject(err);
         }
