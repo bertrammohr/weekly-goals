@@ -4,6 +4,7 @@
 	import { getDayStringFromNumber, getDateStringFromWeekday } from '$lib/util';
 	import { user } from '$lib/stores/user';
 	import type { PageData } from './$types';
+	export let data: PageData;
 
 	let loginModal = false;
 	let loginModalInput = '';
@@ -151,7 +152,29 @@
 		});
 	});
 
-	export let data: PageData;
+	const mondayTime = (Math.floor((data.monday.getTime() / 86400000))*86400000)-(2*60*60*1000);
+	const sundayTime = Math.floor(((data.monday.getTime() + 6*86400000) / 86400000))*86400000;
+
+	function getStreakForType(type: string) {
+		const requiredPerWeek = new Map();
+		requiredPerWeek.set("run", 2);
+		requiredPerWeek.set("gym", 5);
+		requiredPerWeek.set("core", 3);
+		requiredPerWeek.set("creatine", 7);
+
+		let streakValue = 0;
+		const streakActive = data.allWorkouts.filter(workout => workout.type == type && (workout.date >= mondayTime && workout.date <= sundayTime)).length >= requiredPerWeek.get(type);
+
+		while (data.allWorkouts.filter(workout => 
+			workout.type == type && 
+			workout.date >= mondayTime-((streakValue+(streakActive ? 0 : 1))*7*86400000) && 
+			workout.date <= sundayTime-((streakValue+(streakActive ? 0 : 1))*7*86400000)
+		).length >= requiredPerWeek.get(type)) {
+			streakValue++;
+		}
+
+		return {value: streakValue, active: streakActive};
+	}
 </script>
 
 <svelte:head>
@@ -213,10 +236,9 @@
 
 		<TableBodyRow>
 			<TableBodyCell class="text-center">Streak</TableBodyCell>
-			<TableBodyCell class="text-center"></TableBodyCell>
-			<TableBodyCell class="text-center"></TableBodyCell>
-			<TableBodyCell class="text-center"></TableBodyCell>
-			<TableBodyCell class="text-center"></TableBodyCell>
+			{#each [getStreakForType("run"), getStreakForType("gym"), getStreakForType("core"), getStreakForType("creatine")] as streak}
+				<TableBodyCell class="text-center"><p class={streak.active ? "text-green-500" : "text-gray-500"}>{streak.value}</p></TableBodyCell>
+			{/each}
 		</TableBodyRow>
 	</TableBody>
 </Table>
