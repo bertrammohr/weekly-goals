@@ -163,20 +163,18 @@
 		requiredPerWeek.set("creatine", 7);
 
 		let streakValue = 0;
+		const streakActive = data.allWorkouts.filter(workout => workout.type == type && (workout.date >= mondayTime && workout.date <= sundayTime)).length >= requiredPerWeek.get(type);
 
-		while (data.allWorkouts.filter(workout => workout.type == type && (workout.date >= mondayTime-(streakValue*7*86400000) && workout.date <= sundayTime-(streakValue*7*86400000))).length >= requiredPerWeek.get(type)) {
+		while (data.allWorkouts.filter(workout => 
+			workout.type == type && 
+			workout.date >= mondayTime-((streakValue+(streakActive ? 0 : 1))*7*86400000) && 
+			workout.date <= sundayTime-((streakValue+(streakActive ? 0 : 1))*7*86400000)
+		).length >= requiredPerWeek.get(type)) {
 			streakValue++;
 		}
 
-		return streakValue;
+		return {value: streakValue, active: streakActive};
 	}
-
-	let streak = [
-		{ type: "run", streak: getStreakForType("run") },
-		{ type: "gym", streak: getStreakForType("gym") },
-		{ type: "core", streak: getStreakForType("core") },
-		{ type: "creatine", streak: getStreakForType("creatine") }
-	];
 </script>
 
 <svelte:head>
@@ -209,8 +207,6 @@
 	<Button on:click={() => redirectWeek(true)}>Ugen efter &rarr;</Button>
 </div>
 
-{JSON.stringify(streak)}
-
 <Table>
 	<TableHead>
 		<TableHeadCell></TableHeadCell>
@@ -240,10 +236,9 @@
 
 		<TableBodyRow>
 			<TableBodyCell class="text-center">Streak</TableBodyCell>
-			<TableBodyCell class="text-center"></TableBodyCell>
-			<TableBodyCell class="text-center"></TableBodyCell>
-			<TableBodyCell class="text-center"></TableBodyCell>
-			<TableBodyCell class="text-center"></TableBodyCell>
+			{#each [getStreakForType("run"), getStreakForType("gym"), getStreakForType("core"), getStreakForType("creatine")] as streak}
+				<TableBodyCell class="text-center"><p class={streak.active ? "text-green-500" : "text-gray-500"}>{streak.value}</p></TableBodyCell>
+			{/each}
 		</TableBodyRow>
 	</TableBody>
 </Table>
