@@ -4,6 +4,7 @@
 	import { getDayStringFromNumber, getDateStringFromWeekday } from '$lib/util';
 	import { user } from '$lib/stores/user';
 	import type { PageData } from './$types';
+	export let data: PageData;
 
 	let loginModal = false;
 	let loginModalInput = '';
@@ -151,7 +152,31 @@
 		});
 	});
 
-	export let data: PageData;
+	const mondayTime = (Math.floor((data.monday.getTime() / 86400000))*86400000)-(2*60*60*1000);
+	const sundayTime = Math.floor(((data.monday.getTime() + 6*86400000) / 86400000))*86400000;
+
+	function getStreakForType(type: string) {
+		const requiredPerWeek = new Map();
+		requiredPerWeek.set("run", 2);
+		requiredPerWeek.set("gym", 5);
+		requiredPerWeek.set("core", 3);
+		requiredPerWeek.set("creatine", 7);
+
+		let streakValue = 0;
+
+		while (data.allWorkouts.filter(workout => workout.type == type && (workout.date >= mondayTime-(streakValue*7*86400000) && workout.date <= sundayTime-(streakValue*7*86400000))).length >= requiredPerWeek.get(type)) {
+			streakValue++;
+		}
+
+		return streakValue;
+	}
+
+	let streak = [
+		{ type: "run", streak: getStreakForType("run") },
+		{ type: "gym", streak: getStreakForType("gym") },
+		{ type: "core", streak: getStreakForType("core") },
+		{ type: "creatine", streak: getStreakForType("creatine") }
+	];
 </script>
 
 <svelte:head>
@@ -183,6 +208,8 @@
 	<p class="text-white text-center">{data.weekoffset}</p>
 	<Button on:click={() => redirectWeek(true)}>Ugen efter &rarr;</Button>
 </div>
+
+{JSON.stringify(streak)}
 
 <Table>
 	<TableHead>
